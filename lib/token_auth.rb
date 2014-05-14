@@ -16,6 +16,8 @@ module TokenAuthentication
         # token = Devise.friendly_token
         token = SecureRandom.hex
       end while self.class.exists?(authentication_token: token)
+
+      token
     end
 
     module ClassMethods
