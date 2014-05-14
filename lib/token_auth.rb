@@ -1,5 +1,7 @@
 module TokenAuthentication
 
+  class Unauthorized < StandardError; end
+
   module ActsAsTokenAuthenticatable
     extend ActiveSupport::Concern
 
@@ -40,17 +42,13 @@ module TokenAuthentication
     end
 
     def authenticate_by_token!
-      authenticate || render_unauthorized
+      authenticate || (raise Unauthorized)
     end
 
     def authenticate
       @current_user = authenticate_with_http_token do |token, options|
         @@entity.find_by_authentication_token(token)
       end
-    end
-
-    def render_unauthorized
-      render status: :unauthorized, json: { error: 'Unauthorized' }
     end
 
     module ClassMethods
