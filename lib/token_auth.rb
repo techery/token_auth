@@ -33,7 +33,6 @@ module TokenAuthentication
 
     included do
       private :authenticate_by_token!
-      before_filter :authenticate_by_token!
     end
 
     def self.set_entity entity
@@ -52,6 +51,7 @@ module TokenAuthentication
 
     module ClassMethods
       def acts_as_token_authenticator_for(entity, options = {})
+        before_filter :authenticate_by_token!
         TokenAuthentication::ActsAsTokenAuthenticator.set_entity entity
       end
     end
