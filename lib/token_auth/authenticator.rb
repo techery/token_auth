@@ -3,27 +3,29 @@ module TokenAuth
     extend ActiveSupport::Concern
 
     included do
-      private :authenticate_by_token!
+      private :authenticate_entity_by_token!
     end
 
-    def self.set_entity entity
-      @@entity = entity
-    end
-
-    def authenticate_by_token!
-      authenticate || (raise Unauthorized)
-    end
-
-    def authenticate
-      @current_user = authenticate_with_http_token do |token, options|
-        @@entity.find_by_authentication_token(token)
+    def authenticate_entity_by_token!(authenticable_class)
+      @current_entity ||= authenticate_with_http_token do |token, options|
+        authenticable_class.find_by_authentication_token(token)
       end
+
+      raise Unauthorized unless @current_entity.present?
     end
+
 
     module ClassMethods
-      def acts_as_token_authenticator_for(entity, options = {})
-        before_filter :authenticate_by_token!
-        TokenAuth::Authenticator.set_entity entity
+      def acts_as_token_authenticator_for(authenticable_class, options = {})
+        authenticable_class_underscored = authenticable_class.name.parameterize.singularize.underscore
+
+        before_filter :"authenticate_#{authenticable_class_underscored}_by_token!"
+
+        class_eval <<-AUTHENTICATOR, __FILE__, __LINE__ + 1
+          def authenticate_#{authenticable_class_underscored}_by_token!
+            authenticate_entity_by_token!(#{authenticable_class})
+          end
+        AUTHENTICATOR
       end
     end
   end
